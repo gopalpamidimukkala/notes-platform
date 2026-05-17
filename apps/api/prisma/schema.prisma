@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum SharePermission {
+  VIEW
+  EDIT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  notes        Note[]
+  sharedNotes  NoteShare[]
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  isArchived  Boolean  @default(false)
+  isFavorite  Boolean  @default(false)
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  shares      NoteShare[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+  @@unique([id, ownerId])
+}
+
+model NoteShare {
+  id          String          @id @default(cuid())
+  noteId      String
+  userId      String
+  permission  SharePermission @default(VIEW)
+  note        Note            @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime        @default(now())
+
+  @@unique([noteId, userId])
+  @@index([noteId])
+  @@index([userId])
+}
